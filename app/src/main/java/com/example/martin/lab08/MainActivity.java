@@ -5,6 +5,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
@@ -21,12 +22,12 @@ import android.widget.TextView;
 
 
 public class MainActivity extends AppCompatActivity {
-    TextView t= null;
+    EditText t= null;
     ImageView iv=null;
     private String imagePath;
     final int REQUEST_CAMERA = 1;
     final int SELECT_FILE = 2;
-    final CharSequence[] items = {"Take Photo", "Choose from Library"};
+    final CharSequence[] items = {"Take Photo", "Choose From Gallery"};
     Uri imageSelected;
 
 
@@ -51,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
                             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                             startActivityForResult(intent, REQUEST_CAMERA);
                         } else if (items[which].equals("Choose From Gallery")) {
-                            Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                            Intent intent = new Intent(Intent.ACTION_GET_CONTENT, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
                             startActivityForResult(intent,SELECT_FILE);
                         }
                     }
@@ -64,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 };
 
-                Dialog d=createSingleChoiceAlertDialog(MainActivity.this,t.getText().toString(),items,optionSelectedListener,cancelListener);
+                Dialog d=createSingleChoiceAlertDialog(MainActivity.this,"Choose picture",items,optionSelectedListener,cancelListener);
                 d.show();
 
             }
@@ -102,9 +103,9 @@ public class MainActivity extends AppCompatActivity {
         switch(requestCode) {
             case REQUEST_CAMERA:
                 if(resultCode == RESULT_OK){
-                    Uri selectedImage = imageReturnedIntent.getData();
-                    iv.setImageURI(selectedImage);
-                    imageSelected=selectedImage;
+                    Bitmap bitmap = (Bitmap) imageReturnedIntent.getExtras().get("data");
+                    iv.setImageBitmap(bitmap);
+                    break;
                 }
 
                 break;
@@ -121,17 +122,17 @@ public class MainActivity extends AppCompatActivity {
     public void save(){
         if(validation()){
             Intent intent = new Intent(this, PostActivity.class);
-            EditText editText = (EditText) findViewById(R.id.editText);
+            EditText editText = findViewById(R.id.editText);
             String message = editText.getText().toString();
             Bundle b =new Bundle();b.putSerializable("post",new Post(message,imageSelected));
-            intent.putExtra("post",b);
+            intent.putExtras(b);
             startActivity(intent);
         }
 
     }
     public boolean validation(){
 
-        if(t.getText().toString().length()==0 && imageSelected==null){
+        if(t.getText().toString().length()==0 && iv.getDrawable()==null){
             t.setError("Please enter either a message or select an image");
             return false;
         }

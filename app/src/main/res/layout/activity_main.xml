@@ -11,17 +11,14 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <android.support.design.widget.TextInputLayout
+
+        <EditText
             android:id="@+id/editText"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <android.support.design.widget.TextInputEditText
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="hint"
-                tools:text="Enter Message" />
-        </android.support.design.widget.TextInputLayout>
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:inputType="textPersonName"
+            android:text="Enter Message" />
 
         <Button
             android:id="@+id/button"
@@ -32,8 +29,7 @@
         <ImageView
             android:id="@+id/imageView"
             android:layout_width="match_parent"
-            android:layout_height="334dp"
-            app:srcCompat="@drawable/ic_launcher_background" />
+            android:layout_height="334dp" />
 
         <Button
             android:id="@+id/button2"
