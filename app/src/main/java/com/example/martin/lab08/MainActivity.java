@@ -1,24 +1,15 @@
 package com.example.martin.lab08;
 
-import android.app.AlertDialog;
-import android.app.Dialog;
+
+import android.support.v4.app.Fragment;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
 import android.graphics.Bitmap;
-import android.net.Uri;
-import android.provider.MediaStore;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.TextView;
-
-
 
 
 public class MainActivity extends AppCompatActivity {
@@ -28,13 +19,18 @@ public class MainActivity extends AppCompatActivity {
     final int REQUEST_CAMERA = 1;
     final int SELECT_FILE = 2;
     final CharSequence[] items = {"Take Photo", "Choose From Gallery"};
-    Uri imageSelected;
+    Bitmap imageSelected;
+    public static Context contextOfApplication;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        contextOfApplication = getApplicationContext();
+        showFragment(new NewPostFragment(), true);
+        /*
+
         this.t= findViewById(R.id.editText);
         this.iv=findViewById(R.id.imageView);
 
@@ -79,8 +75,10 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-    }
+        */
 
+    }
+    /*
     @NonNull
     public static Dialog createSingleChoiceAlertDialog(@NonNull Context context, @Nullable String title,
                                                        @Nullable CharSequence[] items,
@@ -105,15 +103,33 @@ public class MainActivity extends AppCompatActivity {
                 if(resultCode == RESULT_OK){
                     Bitmap bitmap = (Bitmap) imageReturnedIntent.getExtras().get("data");
                     iv.setImageBitmap(bitmap);
+
+                    final float densityMultiplier = this.getResources().getDisplayMetrics().density;
+                    int h= (int) (100*densityMultiplier);
+                    int w= (int) (h * bitmap.getWidth()/((double) bitmap.getHeight()));
+                    bitmap=Bitmap.createScaledBitmap(bitmap, w, h, true);
+
+                    imageSelected=bitmap;
                     break;
                 }
 
                 break;
             case SELECT_FILE:
                 if(resultCode == RESULT_OK){
-                    Uri selectedImage = imageReturnedIntent.getData();
-                    iv.setImageURI(selectedImage);
-                    imageSelected=selectedImage;
+                    try{
+                        Uri imageUri = imageReturnedIntent.getData();
+                        Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
+                        iv.setImageBitmap(bitmap);
+
+                        final float densityMultiplier = this.getResources().getDisplayMetrics().density;
+                        int h= (int) (100*densityMultiplier);
+                        int w= (int) (h * bitmap.getWidth()/((double) bitmap.getHeight()));
+                        bitmap=Bitmap.createScaledBitmap(bitmap, w, h, true);
+
+                        imageSelected=bitmap;
+                        break;
+                    }catch(Exception e){}
+
                 }
                 break;
         }
@@ -124,9 +140,10 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(this, PostActivity.class);
             EditText editText = findViewById(R.id.editText);
             String message = editText.getText().toString();
-            Bundle b =new Bundle();b.putSerializable("post",new Post(message,imageSelected));
+            Bundle b =new Bundle();b.putParcelable("post",new Post(message,imageSelected));
             intent.putExtras(b);
             startActivity(intent);
+
         }
 
     }
@@ -136,11 +153,34 @@ public class MainActivity extends AppCompatActivity {
             t.setError("Please enter either a message or select an image");
             return false;
         }
-        if(t.getText().toString().length()<50){
+        if(t.getText().toString().length()<1){
             t.setError("The text field should have a length longer than 50 characters");
             return false;
         }
         return true;
+    }
+
+    */
+
+    public void showFragment(Fragment fragment, boolean addToBackStack)
+    {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+
+        String tag = fragment.getClass().getSimpleName();
+        if ( addToBackStack )
+        {
+            transaction.addToBackStack( tag );
+        }
+        transaction.replace( R.id.fragment_container, fragment, tag );
+        transaction.commitAllowingStateLoss();
+    }
+
+
+
+    public static Context getContextOfApplication()
+    {
+        return contextOfApplication;
     }
 
 

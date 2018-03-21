@@ -1,32 +1,48 @@
 package com.example.martin.lab08;
 
-import android.app.AlertDialog;
-import android.app.Dialog;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.provider.MediaStore;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 
 
 
 public class NewPostFragment extends Fragment {
+    EditText t= null;
+    ImageView iv=null;
+    private String imagePath;
+    final int REQUEST_CAMERA = 1;
+    final int SELECT_FILE = 2;
+    final CharSequence[] items = {"Take Photo", "Choose From Gallery"};
+    Bitmap imageSelected;
+    Context applicationContext;
+
+    private static final String ARG_PARAM1 = "param1";
+    private static final String ARG_PARAM2 = "param2";
 
 
-    /**
+    private String mParam1;
+    private String mParam2;
+
+    private OnFragmentInteractionListener mListener;
+
+    public NewPostFragment() {
+    }
 
 
     public static NewPostFragment newInstance(String param1, String param2) {
@@ -41,13 +57,12 @@ public class NewPostFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        this.t= findViewById(R.id.editText);
-        this.iv=findViewById(R.id.imageView);
+        applicationContext = MainActivity.getContextOfApplication();
+        this.t= getView().findViewById(R.id.editText3);
+        this.iv=getView().findViewById(R.id.imageView3);
 
-
-
-        final Button button = findViewById(R.id.button);
-        button.setOnClickListener(new View.OnClickListener() {
+        final Button button3 = getView().findViewById(R.id.button3);
+        button3.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
 
 
@@ -58,7 +73,7 @@ public class NewPostFragment extends Fragment {
                             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                             startActivityForResult(intent, REQUEST_CAMERA);
                         } else if (items[which].equals("Choose From Gallery")) {
-                            Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                            Intent intent = new Intent(Intent.ACTION_GET_CONTENT, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
                             startActivityForResult(intent,SELECT_FILE);
                         }
                     }
@@ -71,38 +86,34 @@ public class NewPostFragment extends Fragment {
                     }
                 };
 
-                Dialog d=createSingleChoiceAlertDialog(MainActivity.this,t.getText().toString(),items,optionSelectedListener,cancelListener);
+                Dialog d=createSingleChoiceAlertDialog(applicationContext,"Choose picture",items,optionSelectedListener,cancelListener);
                 d.show();
 
             }
         });
 
 
-        final Button button2 = findViewById(R.id.button2);
-        button2.setOnClickListener(new View.OnClickListener() {
+        final Button button4 = getView().findViewById(R.id.button4);
+        button4.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 save();
             }
         });
 
 
+
         if (getArguments() != null) {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
-
-
-
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_new_post, container, false);
     }
 
-    // TODO: Rename method, update argument and hook method into UI event
+
     public void onButtonPressed(Uri uri) {
         if (mListener != null) {
             mListener.onFragmentInteraction(uri);
@@ -128,10 +139,8 @@ public class NewPostFragment extends Fragment {
 
 
     public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
     }
-
 
 
     @NonNull
@@ -150,23 +159,42 @@ public class NewPostFragment extends Fragment {
     }
 
 
+
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent imageReturnedIntent) {
         super.onActivityResult(requestCode, resultCode, imageReturnedIntent);
         switch(requestCode) {
             case REQUEST_CAMERA:
                 if(resultCode == -1){
-                    Uri selectedImage = imageReturnedIntent.getData();
-                    iv.setImageURI(selectedImage);
-                    imageSelected=selectedImage;
+                    Bitmap bitmap = (Bitmap) imageReturnedIntent.getExtras().get("data");
+                    iv.setImageBitmap(bitmap);
+
+                    final float densityMultiplier = this.getResources().getDisplayMetrics().density;
+                    int h= (int) (100*densityMultiplier);
+                    int w= (int) (h * bitmap.getWidth()/((double) bitmap.getHeight()));
+                    bitmap=Bitmap.createScaledBitmap(bitmap, w, h, true);
+
+                    imageSelected=bitmap;
+                    break;
                 }
 
                 break;
             case SELECT_FILE:
                 if(resultCode == -1){
-                    Uri selectedImage = imageReturnedIntent.getData();
-                    iv.setImageURI(selectedImage);
-                    imageSelected=selectedImage;
+                    try{
+                        Uri imageUri = imageReturnedIntent.getData();
+                        Bitmap bitmap = MediaStore.Images.Media.getBitmap(applicationContext.getContentResolver(), imageUri);
+                        iv.setImageBitmap(bitmap);
+
+                        final float densityMultiplier = this.getResources().getDisplayMetrics().density;
+                        int h= (int) (100*densityMultiplier);
+                        int w= (int) (h * bitmap.getWidth()/((double) bitmap.getHeight()));
+                        bitmap=Bitmap.createScaledBitmap(bitmap, w, h, true);
+
+                        imageSelected=bitmap;
+                        break;
+                    }catch(Exception e){}
+
                 }
                 break;
         }
@@ -174,29 +202,26 @@ public class NewPostFragment extends Fragment {
 
     public void save(){
         if(validation()){
-            Intent intent = new Intent(this, PostActivity.class);
-            EditText editText = (EditText) findViewById(R.id.editText);
+            Intent intent = new Intent(NewPostFragment.this.getActivity(), NewPostFragment.class);
+            EditText editText = getView().findViewById(R.id.editText3);
             String message = editText.getText().toString();
-            Bundle b =new Bundle();b.putSerializable("post",new Post(message,imageSelected));
-            intent.putExtra("post",b);
+            Bundle b =new Bundle();b.putParcelable("post",new Post(message,imageSelected));
+            intent.putExtras(b);
             startActivity(intent);
         }
 
     }
     public boolean validation(){
 
-        if(t.getText().toString().length()==0 && imageSelected==null){
+        if(t.getText().toString().length()==0 && iv.getDrawable()==null){
             t.setError("Please enter either a message or select an image");
             return false;
         }
-        if(t.getText().toString().length()<50){
+        if(t.getText().toString().length()<1){
             t.setError("The text field should have a length longer than 50 characters");
             return false;
         }
         return true;
     }
-
-
-*/
 
 }
