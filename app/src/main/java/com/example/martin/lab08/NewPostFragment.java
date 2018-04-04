@@ -4,6 +4,7 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,15 +32,11 @@ public class NewPostFragment extends Fragment {
     final CharSequence[] items = {"Take Photo", "Choose From Gallery"};
     Bitmap imageSelected;
     Context applicationContext;
-
+    private View v;
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
-
-
     private String mParam1;
     private String mParam2;
-
-    private OnFragmentInteractionListener mListener;
 
     public NewPostFragment() {
     }
@@ -54,93 +51,34 @@ public class NewPostFragment extends Fragment {
         return fragment;
     }
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        applicationContext = MainActivity.getContextOfApplication();
-        this.t= getView().findViewById(R.id.editText3);
-        this.iv=getView().findViewById(R.id.imageView3);
 
-        final Button button3 = getView().findViewById(R.id.button3);
-        button3.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-
-
-                DialogInterface.OnClickListener optionSelectedListener =new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        if (items[which].equals("Take Photo")) {
-                            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                            startActivityForResult(intent, REQUEST_CAMERA);
-                        } else if (items[which].equals("Choose From Gallery")) {
-                            Intent intent = new Intent(Intent.ACTION_GET_CONTENT, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                            startActivityForResult(intent,SELECT_FILE);
-                        }
-                    }
-                };
-
-                DialogInterface.OnClickListener cancelListener =new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                };
-
-                Dialog d=createSingleChoiceAlertDialog(applicationContext,"Choose picture",items,optionSelectedListener,cancelListener);
-                d.show();
-
-            }
-        });
-
-
-        final Button button4 = getView().findViewById(R.id.button4);
-        button4.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                save();
-            }
-        });
-
-
-
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
-    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_new_post, container, false);
+        this.v =inflater.inflate(R.layout.fragment_new_post, container, false);
+
+        this.t= this.v.findViewById(R.id.editText3);
+        this.iv=this.v.findViewById(R.id.imageView3);
+
+        final Button button3 = this.v.findViewById(R.id.button3);
+        button3.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                photo(v);
+            }
+        });
+
+
+        final Button button4 = this.v.findViewById(R.id.button4);
+        button4.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                save(v);
+            }
+        });
+
+        return this.v;
     }
 
 
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
-        }
-    }
-
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
-        }
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        mListener = null;
-    }
-
-
-    public interface OnFragmentInteractionListener {
-        void onFragmentInteraction(Uri uri);
-    }
 
 
     @NonNull
@@ -173,7 +111,6 @@ public class NewPostFragment extends Fragment {
                     int h= (int) (100*densityMultiplier);
                     int w= (int) (h * bitmap.getWidth()/((double) bitmap.getHeight()));
                     bitmap=Bitmap.createScaledBitmap(bitmap, w, h, true);
-
                     imageSelected=bitmap;
                     break;
                 }
@@ -183,7 +120,7 @@ public class NewPostFragment extends Fragment {
                 if(resultCode == -1){
                     try{
                         Uri imageUri = imageReturnedIntent.getData();
-                        Bitmap bitmap = MediaStore.Images.Media.getBitmap(applicationContext.getContentResolver(), imageUri);
+                        Bitmap bitmap = MediaStore.Images.Media.getBitmap(getActivity().getContentResolver(), imageUri);
                         iv.setImageBitmap(bitmap);
 
                         final float densityMultiplier = this.getResources().getDisplayMetrics().density;
@@ -200,17 +137,50 @@ public class NewPostFragment extends Fragment {
         }
     }
 
-    public void save(){
+    public void save(View v){
         if(validation()){
-            Intent intent = new Intent(NewPostFragment.this.getActivity(), NewPostFragment.class);
-            EditText editText = getView().findViewById(R.id.editText3);
+            EditText editText = this.v.findViewById(R.id.editText3);
             String message = editText.getText().toString();
-            Bundle b =new Bundle();b.putParcelable("post",new Post(message,imageSelected));
-            intent.putExtras(b);
-            startActivity(intent);
-        }
+            Post p =new Post(message,imageSelected);
+            PostFragment postfragment= new PostFragment();
+            postfragment.setP(p);
 
+            FragmentTransaction fragmentTransaction = getActivity().getSupportFragmentManager().beginTransaction();
+            String tag =postfragment.getClass().getSimpleName();
+            fragmentTransaction.replace(R.id.fragment_container, postfragment,tag);
+            fragmentTransaction.addToBackStack(null);
+            fragmentTransaction.commitAllowingStateLoss();
+        }
     }
+
+    public void photo(View v){
+
+        DialogInterface.OnClickListener optionSelectedListener =new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                if (items[which].equals("Take Photo")) {
+                    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                    startActivityForResult(intent, REQUEST_CAMERA);
+                } else if (items[which].equals("Choose From Gallery")) {
+                    Intent intent = new Intent(Intent.ACTION_GET_CONTENT, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                    startActivityForResult(intent,SELECT_FILE);
+                }
+            }
+        };
+
+        DialogInterface.OnClickListener cancelListener =new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        };
+
+        Dialog d=createSingleChoiceAlertDialog(getContext(),"Choose picture",items,optionSelectedListener,cancelListener);
+        d.create();
+        d.show();
+    }
+
+
     public boolean validation(){
 
         if(t.getText().toString().length()==0 && iv.getDrawable()==null){
